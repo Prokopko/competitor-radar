@@ -1,0 +1,440 @@
+{
+  "name": "Competitor Radar — Telegram bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"]
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 700],
+      "webhookId": "REPLACE_ON_FIRST_SAVE",
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-allowed-chat",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": "388790734",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "if-allowed-chat",
+      "name": "Allowed chat?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 700]
+    },
+    {
+      "parameters": {},
+      "id": "noop-ignore",
+      "name": "Ignore other chats",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [680, 940]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const BUTTONS = {\n  \"🔄 Refresh\": \"/refresh\",\n  \"📰 Digest\": \"/digest\",\n  \"📊 Status\": \"/status\",\n  \"ℹ️ Help\": \"/help\",\n};\n\nconst msg = $input.item.json.message || {};\nconst text = msg.text || \"\";\nconst mapped = BUTTONS[text] || text;\nconst command = mapped.startsWith(\"/\")\n  ? mapped.split(\" \")[0].split(\"@\")[0].toLowerCase()\n  : \"none\";\n\nreturn {\n  json: {\n    command,\n    chatId: msg.chat && msg.chat.id,\n    text: mapped,\n  },\n};"
+      },
+      "id": "code-normalize",
+      "name": "Normalize command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 700]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "or",
+                "conditions": [
+                  {
+                    "id": "cond-help-1",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/start",
+                    "operator": { "type": "string", "operation": "equals" }
+                  },
+                  {
+                    "id": "cond-help-2",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/help",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "help"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "or",
+                "conditions": [
+                  {
+                    "id": "cond-refresh",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/refresh",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "refresh"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "or",
+                "conditions": [
+                  {
+                    "id": "cond-digest",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/digest",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "digest"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "or",
+                "conditions": [
+                  {
+                    "id": "cond-status",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/status",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "status"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "switch-command",
+      "name": "Route command",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [920, 700]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=🛰 <b>Competitor Radar</b>\n\nI track fintech competitors for you: app releases, pricing changes, blog posts, news and ads.\n\nEvery Monday I send a digest of the past week here automatically.\n\nUse the buttons below, or these commands:\n/digest — send this week's digest now\n/refresh — run data collection now\n/status — last run / next run / items tracked",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true,
+          "reply_markup": "={{ JSON.stringify({ keyboard: [[{text:'🔄 Refresh'},{text:'📰 Digest'}],[{text:'📊 Status'},{text:'ℹ️ Help'}]], resize_keyboard: true }) }}"
+        }
+      },
+      "id": "send-help",
+      "name": "Send help",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1180, 140],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "⏳ Running collection… this can take a minute.",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-running",
+      "name": "Send: running",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1180, 380],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shrine-wilt-panda.ngrok-free.dev/api/refresh",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "ngrok-skip-browser-warning", "value": "true" }
+          ]
+        },
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "http-refresh",
+      "name": "POST /api/refresh",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1420, 380]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const stats = $input.item.json;\nconst errors = stats.errors || [];\nlet text = `✅ Done: found ${stats.found}, new ${stats.inserted}`;\nif (errors.length) text += `, errors ${errors.length}`;\n\nreturn {\n  json: {\n    chatId: $('Normalize command').item.json.chatId,\n    text,\n  },\n};"
+      },
+      "id": "code-format-refresh",
+      "name": "Format refresh result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1660, 380]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-refresh-result",
+      "name": "Send refresh result",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1900, 380],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shrine-wilt-panda.ngrok-free.dev/api/telegram-digest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "ngrok-skip-browser-warning", "value": "true" }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-digest",
+      "name": "GET /api/telegram-digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 620]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "messages",
+        "options": {}
+      },
+      "id": "split-digest",
+      "name": "Split digest parts",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1420, 620]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize command').item.json.chatId }}",
+        "text": "={{ $json.messages }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-digest-part",
+      "name": "Send digest part",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1660, 620],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shrine-wilt-panda.ngrok-free.dev/api/overview",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "ngrok-skip-browser-warning", "value": "true" }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "http-status",
+      "name": "GET /api/overview",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 860]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $input.item.json;\nconst last = data.last_run || {};\nconst text =\n  `Last run: ${last.finished_at || last.started_at || '—'}\\n` +\n  `Next run: ${data.next_run || '—'}\\n` +\n  `Items tracked: ${data.total_items}`;\n\nreturn {\n  json: {\n    chatId: $('Normalize command').item.json.chatId,\n    text,\n  },\n};"
+      },
+      "id": "code-format-status",
+      "name": "Format status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 860]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-status",
+      "name": "Send status",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1660, 860],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "Unknown command. Try /help.",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-unknown",
+      "name": "Send unknown",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1180, 1100],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Competitor Radar Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "Allowed chat?", "type": "main", "index": 0 }]]
+    },
+    "Allowed chat?": {
+      "main": [
+        [{ "node": "Normalize command", "type": "main", "index": 0 }],
+        [{ "node": "Ignore other chats", "type": "main", "index": 0 }]
+      ]
+    },
+    "Normalize command": {
+      "main": [[{ "node": "Route command", "type": "main", "index": 0 }]]
+    },
+    "Route command": {
+      "main": [
+        [{ "node": "Send help", "type": "main", "index": 0 }],
+        [{ "node": "Send: running", "type": "main", "index": 0 }],
+        [{ "node": "GET /api/telegram-digest", "type": "main", "index": 0 }],
+        [{ "node": "GET /api/overview", "type": "main", "index": 0 }],
+        [{ "node": "Send unknown", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send: running": {
+      "main": [[{ "node": "POST /api/refresh", "type": "main", "index": 0 }]]
+    },
+    "POST /api/refresh": {
+      "main": [[{ "node": "Format refresh result", "type": "main", "index": 0 }]]
+    },
+    "Format refresh result": {
+      "main": [[{ "node": "Send refresh result", "type": "main", "index": 0 }]]
+    },
+    "GET /api/telegram-digest": {
+      "main": [[{ "node": "Split digest parts", "type": "main", "index": 0 }]]
+    },
+    "Split digest parts": {
+      "main": [[{ "node": "Send digest part", "type": "main", "index": 0 }]]
+    },
+    "GET /api/overview": {
+      "main": [[{ "node": "Format status", "type": "main", "index": 0 }]]
+    },
+    "Format status": {
+      "main": [[{ "node": "Send status", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
