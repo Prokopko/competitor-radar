@@ -251,10 +251,13 @@ def send_telegram_digest(
 
 @app.get("/api/debug-env")
 def debug_env():
+    import datetime
+    def mask(v): return v[:4] + "..." if v else "MISSING"
     return {
-        "TELEGRAM_BOT_TOKEN": "set" if os.environ.get("TELEGRAM_BOT_TOKEN") else "MISSING",
-        "TELEGRAM_CHAT_ID": "set" if os.environ.get("TELEGRAM_CHAT_ID") else "MISSING",
-        "OPENROUTER_API_KEY": "set" if os.environ.get("OPENROUTER_API_KEY") else "MISSING",
+        "TELEGRAM_BOT_TOKEN": mask(os.environ.get("TELEGRAM_BOT_TOKEN")),
+        "TELEGRAM_CHAT_ID": mask(os.environ.get("TELEGRAM_CHAT_ID")),
+        "OPENROUTER_API_KEY": mask(os.environ.get("OPENROUTER_API_KEY")),
+        "server_time": datetime.datetime.utcnow().isoformat(),
     }
 
 
