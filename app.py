@@ -249,6 +249,15 @@ def send_telegram_digest(
     return {"sent": sent}
 
 
+@app.get("/api/debug-env")
+def debug_env():
+    return {
+        "TELEGRAM_BOT_TOKEN": "set" if os.environ.get("TELEGRAM_BOT_TOKEN") else "MISSING",
+        "TELEGRAM_CHAT_ID": "set" if os.environ.get("TELEGRAM_CHAT_ID") else "MISSING",
+        "OPENROUTER_API_KEY": "set" if os.environ.get("OPENROUTER_API_KEY") else "MISSING",
+    }
+
+
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIR / "index.html")
