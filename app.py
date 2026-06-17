@@ -257,6 +257,9 @@ def debug_env():
         "TELEGRAM_BOT_TOKEN": mask(os.environ.get("TELEGRAM_BOT_TOKEN")),
         "TELEGRAM_CHAT_ID": mask(os.environ.get("TELEGRAM_CHAT_ID")),
         "OPENROUTER_API_KEY": mask(os.environ.get("OPENROUTER_API_KEY")),
+        "RAILWAY_ENVIRONMENT": os.environ.get("RAILWAY_ENVIRONMENT", "MISSING"),
+        "RAILWAY_PROJECT_ID": mask(os.environ.get("RAILWAY_PROJECT_ID")),
+        "all_env_keys": sorted(os.environ.keys()),
         "server_time": datetime.datetime.utcnow().isoformat(),
     }
 
